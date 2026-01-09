@@ -1,0 +1,88 @@
+# ============================================================
+# Go Course Selection System .gitignore
+# ============================================================
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build outputs
+*.out
+course_select
+course_select.exe
+*.test
+
+# Go coverage
+*.cov
+coverage.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# GoLand
+*.iml
+*.ipr
+*.iws
+
+# Local config (敏感配置不提交)
+*.local
+*.local.yml
+*.local.yaml
+*.local.json
+config.local.*
+app.local.*
+.env
+.env.*
+!.env.example
+
+# Dependencies
+vendor/
+go.work
+go.work.sum
+
+# Logs and temp
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.mv.db
+*.trace.db
+
+# Build outputs
+build/
+dist/
+bin/
+obj/
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Misc
+*.bak
+*.orig
+*.rej
+*.patch
+*.diff
+
+# OS generated
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
