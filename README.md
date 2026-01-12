@@ -6,6 +6,24 @@
 [![Gin](https://img.shields.io/badge/Gin-1.9-green)](https://gin-gonic.com/)
 [![GORM](https://img.shields.io/badge/GORM-2.0-orange)](https://gorm.io/)
 
+## 学习文档
+
+详细的开发文档请查看 [learn_docs/](learn_docs/) 目录：
+
+- [README.md](learn_docs/README.md) - 快速启动与文档索引
+- [01-项目概述.md](learn_docs/01-项目概述.md) - 项目简介与技术栈
+- [02-项目架构详解.md](learn_docs/02-项目架构详解.md) - DDD 架构设计
+- [03-认证模块详解.md](learn_docs/03-认证模块详解.md) - Session 与权限
+- [04-成员管理模块.md](learn_docs/04-成员管理模块.md) - 用户 CRUD
+- [05-课程管理模块.md](learn_docs/05-课程管理模块.md) - 课程管理
+- [06-选课模块详解.md](learn_docs/06-选课模块详解.md) - 高并发选课
+- [07-基础设施层详解.md](learn_docs/07-基础设施层详解.md) - MySQL/Redis/RocketMQ
+- [08-部署与运维.md](learn_docs/08-部署与运维.md) - Docker 部署
+- [09-API接口完整文档.md](learn_docs/09-API接口完整文档.md) - API 参考
+- [10-错误码完整列表.md](learn_docs/10-错误码完整列表.md) - 错误码说明
+- [11-数据库设计详解.md](learn_docs/11-数据库设计详解.md) - 数据库设计
+- [12-测试指南.md](learn_docs/12-测试指南.md) - 测试指南
+
 ## 项目简介
 
 本项目是一个完整的选排课系统，面向字节跳动 ByteCamp 2021 后端训练营大作业。系统实现了登录认证、成员管理、课程管理、教师绑定、排课算法和学生选课等核心功能。
