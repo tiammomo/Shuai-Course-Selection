@@ -9,6 +9,7 @@ import (
 )
 
 // AuthMiddleware 认证中间件
+// 提供用户认证和权限验证功能
 type AuthMiddleware struct {
 	authService *service.AuthService
 	sessionKey  string
@@ -26,7 +27,7 @@ func NewAuthMiddleware(authService *service.AuthService, sessionKey string) *Aut
 // 检查用户是否已登录，未登录返回 401
 func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取 Session ID
+		// Step 1: 获取 Session ID
 		sessionId, err := c.Cookie("camp-session")
 		if err != nil {
 			c.JSON(200, response.Unauthorized("用户未登录"))
@@ -34,7 +35,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 获取 Session 数据
+		// Step 2: 获取 Session 数据
 		session := sessions.Default(c)
 		v := session.Get(m.sessionKey)
 		if v == nil {
@@ -43,7 +44,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 设置上下文
+		// Step 3: 设置上下文数据
 		c.Set("session_id", sessionId)
 		c.Set("session_data", v)
 		c.Next()
@@ -54,7 +55,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 // 检查用户是否为管理员，非管理员返回 403
 func (m *AuthMiddleware) RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取会话数据
+		// Step 1: 获取会话数据
 		data, exists := c.Get("session_data")
 		if !exists {
 			c.JSON(200, response.Unauthorized("用户未登录"))
@@ -62,7 +63,7 @@ func (m *AuthMiddleware) RequireAdmin() gin.HandlerFunc {
 			return
 		}
 
-		// 验证会话数据格式
+		// Step 2: 验证会话数据格式
 		sessionData, ok := data.(map[string]interface{})
 		if !ok {
 			c.JSON(200, response.Unauthorized("无效的会话"))
@@ -70,7 +71,7 @@ func (m *AuthMiddleware) RequireAdmin() gin.HandlerFunc {
 			return
 		}
 
-		// 获取用户类型
+		// Step 3: 获取用户类型
 		userTypeVal, ok := sessionData["user_type"]
 		if !ok {
 			c.JSON(200, response.Unauthorized("无效的会话"))
@@ -78,7 +79,7 @@ func (m *AuthMiddleware) RequireAdmin() gin.HandlerFunc {
 			return
 		}
 
-		// 验证用户权限
+		// Step 4: 验证用户权限
 		userType, ok := userTypeVal.(int)
 		if !ok || userType != int(model.UserTypeAdmin) {
 			c.JSON(200, response.Forbidden("没有操作权限"))
@@ -94,7 +95,7 @@ func (m *AuthMiddleware) RequireAdmin() gin.HandlerFunc {
 // 检查用户是否为学生，非学生返回 403
 func (m *AuthMiddleware) RequireStudent() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取会话数据
+		// Step 1: 获取会话数据
 		data, exists := c.Get("session_data")
 		if !exists {
 			c.JSON(200, response.Unauthorized("用户未登录"))
@@ -102,7 +103,7 @@ func (m *AuthMiddleware) RequireStudent() gin.HandlerFunc {
 			return
 		}
 
-		// 验证会话数据格式
+		// Step 2: 验证会话数据格式
 		sessionData, ok := data.(map[string]interface{})
 		if !ok {
 			c.JSON(200, response.Unauthorized("无效的会话"))
@@ -110,7 +111,7 @@ func (m *AuthMiddleware) RequireStudent() gin.HandlerFunc {
 			return
 		}
 
-		// 获取用户类型
+		// Step 3: 获取用户类型
 		userTypeVal, ok := sessionData["user_type"]
 		if !ok {
 			c.JSON(200, response.Unauthorized("无效的会话"))
@@ -118,7 +119,7 @@ func (m *AuthMiddleware) RequireStudent() gin.HandlerFunc {
 			return
 		}
 
-		// 验证用户权限
+		// Step 4: 验证用户权限
 		userType, ok := userTypeVal.(int)
 		if !ok || userType != int(model.UserTypeStudent) {
 			c.JSON(200, response.Forbidden("需要学生权限"))
