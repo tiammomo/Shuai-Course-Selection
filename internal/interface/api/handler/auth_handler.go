@@ -102,6 +102,26 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	c.JSON(200, response.Success(nil))
 }
 
+// getStringFromMap 从 map 中安全获取字符串
+func getStringFromMap(data map[string]interface{}, key string, defaultVal string) string {
+	if val, ok := data[key]; ok {
+		if s, ok := val.(string); ok {
+			return s
+		}
+	}
+	return defaultVal
+}
+
+// getIntFromMap 从 map 中安全获取整数
+func getIntFromMap(data map[string]interface{}, key string, defaultVal int) int {
+	if val, ok := data[key]; ok {
+		if t, ok := val.(int); ok {
+			return t
+		}
+	}
+	return defaultVal
+}
+
 // WhoAmI 获取当前用户信息
 // @Summary 获取当前用户信息
 // @Description 获取当前登录用户的信息
@@ -110,56 +130,23 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 // @Success 200 {object} response.Response
 // @Router /auth/whoami [get]
 func (h *AuthHandler) WhoAmI(c *gin.Context) {
-	sessionData, exists := c.Get("session_data")
-	if !exists {
+	data, ok := c.Get("session_data")
+	if !ok {
 		c.JSON(200, response.Fail(errcode.LoginRequired))
 		return
 	}
 
-	data, ok := sessionData.(map[string]interface{})
+	sessionData, ok := data.(map[string]interface{})
 	if !ok {
 		c.JSON(200, response.Fail(errcode.UnknownError.WithMsg("无效的会话数据")))
 		return
 	}
 
-	userIDVal, ok := data["user_id"]
-	if !ok {
-		c.JSON(200, response.Fail(errcode.UnknownError.WithMsg("无效的用户ID")))
-		return
-	}
-	userID, ok := userIDVal.(string)
-	if !ok {
-		c.JSON(200, response.Fail(errcode.UnknownError.WithMsg("无效的用户ID")))
-		return
-	}
-
-	nickname := ""
-	nicknameVal, ok := data["nickname"]
-	if ok {
-		if s, ok := nicknameVal.(string); ok {
-			nickname = s
-		}
-	}
-	username := ""
-	usernameVal, ok := data["username"]
-	if ok {
-		if s, ok := usernameVal.(string); ok {
-			username = s
-		}
-	}
-	userType := 0
-	userTypeVal, ok := data["user_type"]
-	if ok {
-		if t, ok := userTypeVal.(int); ok {
-			userType = t
-		}
-	}
-
 	c.JSON(200, response.Success(dto.WhoAmIResponse{
-		UserID:   userID,
-		Nickname: nickname,
-		Username: username,
-		UserType: userType,
+		UserID:   getStringFromMap(sessionData, "user_id", ""),
+		Nickname: getStringFromMap(sessionData, "nickname", ""),
+		Username: getStringFromMap(sessionData, "username", ""),
+		UserType: getIntFromMap(sessionData, "user_type", 0),
 	}))
 }
 
