@@ -27,6 +27,27 @@ import (
 	"course_select/internal/pkg/logger"
 )
 
+
+// getStringFromMap 从 map 中安全获取字符串
+func getStringFromMap(data map[string]interface{}, key string, defaultVal string) string {
+    if val, ok := data[key]; ok {
+        if s, ok := val.(string); ok {
+            return s
+        }
+    }
+    return defaultVal
+}
+
+// getIntFromMap 从 map 中安全获取整数
+func getIntFromMap(data map[string]interface{}, key string, defaultVal int) int {
+    if val, ok := data[key]; ok {
+        if t, ok := val.(int); ok {
+            return t
+        }
+    }
+    return defaultVal
+}
+
 func main() {
 	// 1. 初始化配置
 	if err := config.Init("config.yaml"); err != nil {
