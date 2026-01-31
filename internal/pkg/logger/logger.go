@@ -21,102 +21,99 @@ type Config struct {
 	Path   string `mapstructure:"path"`   // 日志文件路径
 }
 
-// Init 初始化日志模块
-func Init(cfg *Config) error {
-	// 设置日志级别
-	var level zapcore.Level
-	switch cfg.Level {
+// parseLevel 解析日志级别配置
+func parseLevel(level string) zapcore.Level {
+	switch level {
 	case "debug":
-		level = zapcore.DebugLevel
+		return zapcore.DebugLevel
 	case "info":
-		level = zapcore.InfoLevel
+		return zapcore.InfoLevel
 	case "warn", "warning":
-		level = zapcore.WarnLevel
+		return zapcore.WarnLevel
 	case "error":
-		level = zapcore.ErrorLevel
+		return zapcore.ErrorLevel
 	default:
-		level = zapcore.InfoLevel
+		return zapcore.InfoLevel
+	}
+}
+
+// buildEncoderConfig 构建编码器配置
+func buildEncoderConfig(format string) zapcore.EncoderConfig {
+	common := zapcore.EncoderConfig{
+		TimeKey:        "time",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stack",
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	// 设置编码器
-	var encoderConfig zapcore.EncoderConfig
-	if cfg.Format == "console" {
-		// 控制台格式（人类可读）
-		encoderConfig = zapcore.EncoderConfig{
-			TimeKey:        "time",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			MessageKey:     "msg",
-			StacktraceKey:  "stack",
-			EncodeLevel:    zapcore.CapitalColorLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		}
+	if format == "console" {
+		common.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	} else {
-		// JSON 格式（结构化）
-		encoderConfig = zapcore.EncoderConfig{
-			TimeKey:        "time",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			MessageKey:     "msg",
-			StacktraceKey:  "stack",
-			EncodeLevel:    zapcore.LowercaseLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		}
+		common.EncodeLevel = zapcore.LowercaseLevelEncoder
 	}
+	return common
+}
+
+// buildFileCore 构建文件输出 Core
+func buildFileCore(encoderConfig zapcore.EncoderConfig, path string, level zapcore.Level) ([]zapcore.Core, error) {
+	if path == "" {
+		path = "logs"
+	}
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log directory: %w", err)
+	}
+
+	var cores []zapcore.Core
+	jsonEncoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// Info 日志
+	infoPath := filepath.Join(path, "info.log")
+	infoFile, err := os.OpenFile(infoPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open info log file: %w", err)
+	}
+	defer infoFile.Close()
+	cores = append(cores, zapcore.NewCore(jsonEncoder, zapcore.AddSync(infoFile), level))
+
+	// Error 日志
+	errorPath := filepath.Join(path, "error.log")
+	errorFile, err := os.OpenFile(errorPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open error log file: %w", err)
+	}
+	defer errorFile.Close()
+	cores = append(cores, zapcore.NewCore(jsonEncoder, zapcore.AddSync(errorFile), zapcore.ErrorLevel))
+
+	return cores, nil
+}
+
+// Init 初始化日志模块
+func Init(cfg *Config) error {
+	level := parseLevel(cfg.Level)
+	encoderConfig := buildEncoderConfig(cfg.Format)
 
 	var cores []zapcore.Core
 
 	// 控制台输出
 	if cfg.Output == "stdout" || cfg.Output == "both" {
 		consoleEncoder := zapcore.NewConsoleEncoder(encoderConfig)
-		core := zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), level)
-		cores = append(cores, core)
+		cores = append(cores, zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), level))
 	}
 
 	// 文件输出
 	if cfg.Output == "file" || cfg.Output == "both" {
-		// 确保日志目录存在
-		if cfg.Path == "" {
-			cfg.Path = "logs"
-		}
-		if err := os.MkdirAll(cfg.Path, 0755); err != nil {
-			return fmt.Errorf("failed to create log directory: %w", err)
-		}
-
-		// 错误日志文件
-		errorPath := filepath.Join(cfg.Path, "error.log")
-		errorFile, err := os.OpenFile(errorPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		fileCores, err := buildFileCore(encoderConfig, cfg.Path, level)
 		if err != nil {
-			return fmt.Errorf("failed to open error log file: %w", err)
+			return err
 		}
-		defer errorFile.Close()
-
-		// 普通日志文件
-		infoPath := filepath.Join(cfg.Path, "info.log")
-		infoFile, err := os.OpenFile(infoPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return fmt.Errorf("failed to open info log file: %w", err)
-		}
-		defer infoFile.Close()
-
-		jsonEncoder := zapcore.NewJSONEncoder(encoderConfig)
-
-		// Info 级别日志
-		infoCore := zapcore.NewCore(jsonEncoder, zapcore.AddSync(infoFile), level)
-		cores = append(cores, infoCore)
-
-		// Error 级别及以上日志
-		errorCore := zapcore.NewCore(jsonEncoder, zapcore.AddSync(errorFile), zapcore.ErrorLevel)
-		cores = append(cores, errorCore)
+		cores = append(cores, fileCores...)
 	}
 
-	// 创建 logger
 	log = zap.New(zapcore.NewTee(cores...),
 		zap.AddCaller(),
 		zap.AddCallerSkip(1),
